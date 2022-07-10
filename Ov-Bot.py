@@ -5,14 +5,16 @@ intents = discord.Intents.all()
 bot = commands.Bot(command_prefix='ov!', intents=intents, help_command=commands.MinimalHelpCommand(no_category = 'Commands'))
 
 ### Token ###
-json_file = open("tokens.json")
-tokens = json.load(json_file)
-json_file.close()
+with open("tokens.json") as json_file:
+    tokens = json.load(json_file)
 
 ### Settings ###
-json_file = open("settings.json")
-settings = json.load(json_file)
-json_file.close()
+with open("settings.json") as json_file:
+    settings = json.load(json_file)
+
+### Data ###
+with open("data.json") as json_file:
+    data = json.load(json_file)
 
 ### Variables ###
 participants = []
@@ -28,18 +30,17 @@ async def team_up(ctx, *args):
             voice = ctx.author.voice
             if voice:
                 participants = [x.id for x in voice.channel.members if not x.bot]
-                notification = "Teams formed from voice channel members!"
+                await ctx.send("**Teams formed from voice channel members!**")
             else:
-                notification = "Not in a voice channel!"
+                await ctx.send("**Not in a voice channel!**")
         else:
-            notification = "Unknown parameter!"
+            await ctx.send("**Unknown parameter!**")
     else:
         participants = [y.id for y in ctx.guild.members if not y.bot]
-        notification = "Teams formed from server online members!"
+        await ctx.send("**Teams formed from server online members!**")
 
     random.shuffle(participants)
-
-    await ctx.send("**"+notification+"**")
+    await ctx.send()
 
 #Show list of team up participants.
 @bot.command(name='list', aliases=['l'], help='Show list of team up participants.')
@@ -68,9 +69,14 @@ async def swap(ctx):
 
 #Shuffle (teams / roles / both).
 @bot.command(name='shuffle', aliases=['s'], help='Shuffle (teams / roles / both).')
-async def shuffle(ctx):
-    random.shuffle(participants)
-    await ctx.send("**Teams shuffled!**")
+async def shuffle(ctx, *args):
+    if args[0] in ("teams", "t"):
+        random.shuffle(participants)
+        await ctx.send("**Teams reshuffled!**")
+    elif args[0] in ("roles", "r"):
+        await ctx.send("**Roles reshuffled!**")
+    else:
+        await ctx.send("**Reshuffled!**")
 
 #Select one from all or those belonging to a specific game mode maps.
 @bot.command(name='pick-map', aliases=['p'], help='Select one from all or those belonging to a specific game mode maps.')
