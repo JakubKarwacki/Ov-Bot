@@ -19,11 +19,28 @@ with open("data.json") as json_file:
 ### Variables ###
 participants = []
 
+
+### Local functions ###
+def teams_display(ctx):
+    global participants
+    teams_display = ""
+
+    for id, x in enumerate(participants):
+        if id == 0:
+            teams_display += "`Team 1:`\n"
+        elif not id%(len(participants)//settings["teams"]) and id//(len(participants)//settings["teams"]) <= settings["teams"]:
+            teams_display += "\n`Team "+str(id%((len(participants)-len(participants)%settings["teams"])//settings["teams"])+2)+":`\n"
+        elif id%(len(participants)//settings["teams"]) and id//(len(participants)//settings["teams"]) == settings["teams"]:
+            teams_display += "`Reserve:`\n"
+        teams_display += "*"+str(id%(len(participants)//settings["teams"])+1)+": "+str(ctx.guild.get_member(x).nick or ctx.guild.get_member(x).name)+"*\n"
+    
+    return teams_display
+
 ### Ov-Bot commands ###
 #Form two teams (up to 5 members) and a reserve (available if on in bot settings) based on online server members or actual voice channel members.
 @bot.command(name='team-up', aliases=['t'], help='Form two teams (up to 5 members) and a reserve (available if on in bot settings) based on online server members or actual voice channel members.')
 async def team_up(ctx, *args):
-    global participants
+    global participants, teams_display
 
     if args:
         if args[0] in ["here", "h"]:
@@ -40,7 +57,7 @@ async def team_up(ctx, *args):
         await ctx.send("**Teams formed from server online members!**")
 
     random.shuffle(participants)
-    await ctx.send()
+    await ctx.send(teams_display(ctx))
 
 #Show list of team up participants.
 @bot.command(name='list', aliases=['l'], help='Show list of team up participants.')
@@ -52,7 +69,7 @@ async def list(ctx):
 @bot.command(name='add', aliases=['a'], help='Add participant to the list.')
 async def add(ctx, *args):
     for x in args:
-        [participants.append(y.id) for y in ctx.guild.members if x in (y.nick, y.name)]
+        [participants.append(y.id) for y in ctx.guild.members if x in (y.nick, y.name) and not x.bot]
     await ctx.send("**Participants added to the list!**")
 
 #Remove participant from the list.
@@ -63,9 +80,13 @@ async def remove(ctx, *args):
     await ctx.send("**Participants removed from the list!**")
 
 #Swaps team members with each other.
-@bot.command(name='swap', aliases=['sw'], help='Swaps team members with each other.')
-async def swap(ctx):
-    return
+@bot.command(name='swap', aliases=['sw'], help='Swaps participants with each other.')
+async def swap(ctx, *args):
+    participant_wait = args[0]
+    participants[args[0]-1] = participants[args[1]-1]
+    participants[args[1]-1] = participants[participant_wait]
+
+    await ctx.send("**Participants swaped!**")
 
 #Shuffle (teams / roles / both).
 @bot.command(name='shuffle', aliases=['s'], help='Shuffle (teams / roles / both).')
@@ -77,6 +98,8 @@ async def shuffle(ctx, *args):
         await ctx.send("**Roles reshuffled!**")
     else:
         await ctx.send("**Reshuffled!**")
+    
+    await ctx.send(teams_display(ctx))
 
 #Select one from all or those belonging to a specific game mode maps.
 @bot.command(name='pick-map', aliases=['p'], help='Select one from all or those belonging to a specific game mode maps.')
