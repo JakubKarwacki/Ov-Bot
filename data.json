@@ -1,5 +1,5 @@
 {
-    "maps":
+    "Maps":
     [{
         "Team Deathmatch": 
         [{
@@ -49,7 +49,7 @@
             "src": "https://blz-contentstack-images.akamaized.net/v3/assets/blt2477dcaf4ebd440c/blt26a0476d5aba99f2/611ee47bd0cc27205271676d/eichenwalde.jpg"
         },{
             "name": "Hollywood",
-            "src": ""
+            "src": "https://blz-contentstack-images.akamaized.net/v3/assets/blt2477dcaf4ebd440c/blt88f520c0aa92fe81/611ee483c203863c736d84c9/hollywood.jpg"
         },{
             "name": "King's Row",
             "src": "https://blz-contentstack-images.akamaized.net/v3/assets/blt2477dcaf4ebd440c/bltb115ca8b2620d154/611ee483c203863c736d84cd/kings-row.jpg"

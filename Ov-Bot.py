@@ -15,6 +15,8 @@ with open("settings.json") as json_file:
 ### Data ###
 with open("data.json") as json_file:
     data = json.load(json_file)
+maps = data["Maps"]
+champions = data["Champions"]
 
 ### Variables ###
 participants, teams, roles = [], {}, ["Damage", "Damage", "Tank", "Support", "Support"]
@@ -24,7 +26,7 @@ def split_participants(ctx, reshuffle=None):
     global participants, teams
     needed, to_return = settings["in_team"]*settings["teams"], ""
 
-    #Reshuffle arg
+    #Reshuffle
     if reshuffle:
         if reshuffle == "teams": random.shuffle(participants)
         elif reshuffle == "roles": random.shuffle(roles)
@@ -45,8 +47,8 @@ def split_participants(ctx, reshuffle=None):
     #Teams display
     for key in teams.keys():
         to_return += "`"+key+"`\n"
-        for t in teams[key]:
-            to_return += "*"+(ctx.guild.get_member(t).nick or ctx.guild.get_member(t).name)+"*\n"
+        for id, t in enumerate(teams[key]):
+            to_return += "*"+str(id+1)+": "+(ctx.guild.get_member(t).nick or ctx.guild.get_member(t).name)+"*\n"
         to_return += "\n"
     return to_return
 
@@ -71,7 +73,7 @@ async def team_up(ctx, *args):
         await ctx.send("**Teams formed from server online members!**")
     
     #Slice participants into teams
-    await ctx.send(split_participants(ctx, True))
+    await ctx.send(split_participants(ctx, "Teams"))
     
 
 #Show list of team up participants.
@@ -112,7 +114,15 @@ async def shuffle(ctx, reshuffle="teams"):
 #Select one from all or those belonging to a specific game mode maps.
 @bot.command(name='pick-map', aliases=['p'], help='Select one from all or those belonging to a specific game mode maps.')
 async def pick_map(ctx):
-    return
+    mode_step = maps[random.randint(0,len(maps))]
+    mode = [x for x in mode_step.keys()][0]
+    map = mode_step.get(mode)[random.randint(0,len(mode_step.get(mode)))]
+    name = map.get("name")
+    src = map.get("src")
+
+    embed = discord.Embed(title=name, description="Mode: *"+mode+"*", color=0xF79D20)
+    embed.set_image(url=src)
+    await ctx.send(embed=embed)
 
 #Creates a ban vote for all teams for hero bans (one per role) or for a specific team.
 @bot.command(name='ban-vote', aliases=['b'], help='Creates a ban vote for all teams for hero bans (one per role) or for a specific team.')
@@ -122,7 +132,19 @@ async def ban_vote(ctx):
 #Form two teams, pick a map and ban heroes (one per role for every team* available if on in bot settings).
 @bot.command(name='custom-game', aliases=['c'], help='Form two teams, pick a map and ban heroes (one per role for every team* available if on in bot settings).')
 async def pick_game(ctx):
-    return
+    mode_step = maps[random.randint(0,len(maps))]
+    mode = [x for x in mode_step.keys()][0]
+    map = mode_step.get(mode)[random.randint(0,len(mode_step.get(mode)))]
+    name = map.get("name")
+    src = map.get("src")
+
+    embed = discord.Embed(title=name, description="Mode: *"+mode+"*", color=0xF79D20)
+    embed.add_field(name="Teams", value=split_participants(ctx, "teams"), inline=False)
+    embed.set_image(url=src)
+    await ctx.send(embed=embed)
+    for k_id, key in enumerate(teams.keys()):
+        for id in teams[key]:
+            await ctx.guild.get_member(id).move_to(ctx.guild.get_channel(settings["channels"][k_id]), reason="Teaming up!")
 
 @bot.event 
 async def on_command_error(ctx, error): 
