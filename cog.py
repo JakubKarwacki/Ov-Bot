@@ -53,10 +53,9 @@ class Game_Management(commands.Cog):
             for t in self.teams[key]:
                 await ctx.guild.get_member(t).move_to(vc[k_id],reason="Teaming up") if ctx.guild.get_member(t).voice else await ctx.send(f"<@!{t}> not connected to the voice chat!")
 
-    #Create teams based on members who are currently online or present on the channel
+    #Creates participants list from current online / present on the channel members ("here" / "h" argument).
     @commands.command()
     async def team_up(self, ctx: commands.Context, display=True, *args):
-        """Currently online / present on the channel into participants"""
         if args:
             if args[0] in ["here", "h"]:
                 voice = self.author.voice
@@ -71,16 +70,14 @@ class Game_Management(commands.Cog):
             self.participants = [y.id for y in ctx.guild.members if not y.bot]
             await ctx.send("**Teams formed from server online members!**")
 
-    #Participants list
+    #Displays a list of participants, if any.
     @commands.command()
     async def list(self, ctx: commands.Context):
-        """Participants list"""
         await ctx.send(("**Viewing the list of participants!**\n`Participants:`\n"+' '.join([f"*{id+1}: <@!{x}>*\n" for id, x in enumerate(self.participants)])) if self.participants else "**No participants to display!**")
 
-    #Add participant
+    #Adds participants to the list (by their nicks).
     @commands.command()
     async def add(self, ctx: commands.Context, *args):
-        """Add participant by their name"""
         before = len(self.participants)
         for x in args:
             [self.participants.append(y.id) for y in ctx.guild.members if x in (y.nick, y.name) and not y.bot]
@@ -90,10 +87,9 @@ class Game_Management(commands.Cog):
             await ctx.send("**No such participant/s!**")
         self.split_participants(ctx)
 
-    #Remove participant
+    #Removes participants from the list (by their nicks).
     @commands.command()
     async def remove(self, ctx: commands.Context, *args):
-        """Remove participants by their name"""
         before = len(self.participants)
         for x in args:
             [self.participants.remove(y.id) for y in ctx.guild.members if x in (y.nick, y.name)]
@@ -103,10 +99,9 @@ class Game_Management(commands.Cog):
             await ctx.send("**No such participant/s!**")
         self.split_participants(ctx)
 
-    #Swap participants
+    #Swaps participants (by their list positions).
     @commands.command()
     async def swap(self, ctx: commands.Context, *args):
-        """Swap participants by their list position"""
         if len(args) != 2:
             await ctx.send("Wrong syntax! Check **ov!help** for more informations!")
         elif not len(self.participants):
@@ -115,17 +110,15 @@ class Game_Management(commands.Cog):
             self.participants[int(args[0])-1], self.participants[int(args[1])-1] = self.participants[int(args[1])-1], self.participants[int(args[0])-1]
             await ctx.send("**Participant/s swaped!**")
 
-    #Shuffle (teams / roles / both)
+    #Shuffle (teams / roles / both).
     @commands.command()
-    async def shuffle(self, ctx: commands.Context, reshuffle="teams"):
-        """Shuffle (teams / roles / both)"""
+    async def shuffle(self, ctx: commands.Context, *args):
         await ctx.send("**Teams reshuffled!**")
-        self.split_participants(ctx, reshuffle)
+        self.split_participants(ctx, args[0] if args else "teams")
 
-    #Pick random map
+    #Picks random map.
     @commands.command()
-    async def pick_map(self, ctx: commands.Context, teams=False, reshuffle=None):
-        """Pick random map"""
+    async def pick_map(self, ctx: commands.Context, teams=None, reshuffle=None):
         mode_step = self.maps[random.randint(0,len(self.maps)-1)]
         mode = [x for x in mode_step.keys()][0]
         map = mode_step.get(mode)[random.randint(0,len(mode_step.get(mode))-1)]
@@ -138,13 +131,19 @@ class Game_Management(commands.Cog):
         embed.set_image(url=src)
         await ctx.send(embed=embed)
 
-    #Vote for hero bans
+    #Teams vote on bans for champions.
     '''
     @commands.command()
-    async def ban_vote(self, ctx: commands.Context):
-        """Vote for hero bans"""
+    async def vote_ban(self, ctx: commands.Context):
         return
     '''
+    @commands.command()
+    async def new_game(self, ctx: commands.Context, move=None):
+        """Everything you need to start custom game"""
+        await self.team_up(ctx)
+        await self.pick_map(ctx, True, "teams")
+        if move in ("move", "m"):
+            await self.move(ctx)
 
     #Same team, new map
     @commands.command()
@@ -155,12 +154,10 @@ class Game_Management(commands.Cog):
             await self.move(ctx)
     
     @commands.command()
-    async def new_game(self, ctx: commands.Context, move=None):
-        """Everything you need to start custom game"""
-        await self.team_up(ctx)
-        await self.pick_map(ctx, True, "teams")
-        if move in ("move", "m"):
-            await self.move(ctx)
+    async def help(self, ctx: commands.Context):
+        embed = discord.Embed(title="! Help !", description="List of available commands and their descriptions.", color=0xF79D20)
+        embed.add_field(name="Commands:\n", value='**team_up** - Creates participants list from current online / present on the channel members ("here" / "h" argument).\n\n**list** - Displays a list of participants, if any.\n\n**add** - Adds participants to the list (by their nicks).\n**remove** - Removes participants from the list (by their nicks).\n**swap** - Swaps participants (by their list positions).\n\n**shuffle** - Shuffle (teams / roles / both).\n\n**pick_map** - Picks random map.\n\n**vote_ban** - Teams vote on bans for champions. (in develpement)\n\n**new_game** - Creates a new game set with participants, roles and a map.\n**next_game** - Selects a new map for the same game.', inline=False)
+        await ctx.send(embed=embed)
 
 def setup(bot: commands.Bot):
     bot.add_cog(Game_Management(bot))
