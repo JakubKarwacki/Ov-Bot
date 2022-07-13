@@ -51,7 +51,7 @@ class Game_Management(commands.Cog):
         vc = [x for x in ctx.guild.voice_channels if x.name in self.settings["channels"]]
         for k_id, key in enumerate(self.teams.keys()):
             for t in self.teams[key]:
-                await ctx.guild.get_member(t).move_to(vc[k_id],reason="Teaming up")
+                await ctx.guild.get_member(t).move_to(vc[k_id],reason="Teaming up") if ctx.guild.get_member(t).voice else await ctx.send(f"<@!{t}> not connected to the voice chat!")
 
     #Create teams based on members who are currently online or present on the channel
     @commands.command()
@@ -75,33 +75,45 @@ class Game_Management(commands.Cog):
     @commands.command()
     async def list(self, ctx: commands.Context):
         """Participants list"""
-        await ctx.send("**Viewing the list of participants!**\n`Participants:`\n"+' '.join(["*"+str(id+1)+": "+(self.guild.get_member(x).nick or self.guild.get_member(x).name)+"*\n" for id, x in enumerate(self.participants)]))
+        await ctx.send(("**Viewing the list of participants!**\n`Participants:`\n"+' '.join([f"*{id+1}: <@!{x}>*\n" for id, x in enumerate(self.participants)])) if self.participants else "**No participants to display!**")
 
     #Add participant
     @commands.command()
     async def add(self, ctx: commands.Context, *args):
-        """Add participant"""
+        """Add participant by their name"""
+        before = len(self.participants)
         for x in args:
-            [self.participants.append(y.id) for y in ctx.guild.members if x in (y.nick, y.name) and not x.bot]
-        await ctx.send("**Participants added to the list!**")
+            [self.participants.append(y.id) for y in ctx.guild.members if x in (y.nick, y.name) and not y.bot]
+        if before < len(self.participants):
+            await ctx.send("**Participants added to the list!**")
+        else:
+            await ctx.send("**No such participant/s!**")
         self.split_participants(ctx)
 
     #Remove participant
     @commands.command()
     async def remove(self, ctx: commands.Context, *args):
-        """Remove participant"""
+        """Remove participants by their name"""
+        before = len(self.participants)
         for x in args:
-            [self.participants.pop(y.id) for y in ctx.guild.members if x in (y.nick, y.name)]
-        await ctx.send("**Participants removed from the list!**")
+            [self.participants.remove(y.id) for y in ctx.guild.members if x in (y.nick, y.name)]
+        if before > len(self.participants):
+            await ctx.send("**Participants removed from the list!**")
+        else:
+            await ctx.send("**No such participant/s!**")
         self.split_participants(ctx)
 
     #Swap participants
     @commands.command()
     async def swap(self, ctx: commands.Context, *args):
-        """Swap participants"""
-        self.participants[args[0]-1], self.participants[args[1]-1] = self.participants[args[1]-1], self.participants[args[0]-1]
-        await ctx.send("**Participants swaped!**")
-        self.split_participants(ctx)
+        """Swap participants by their list position"""
+        if len(args) != 2:
+            await ctx.send("Wrong syntax! Check **ov!help** for more informations!")
+        elif not len(self.participants):
+            await ctx.send("**No participants to swap!**")
+        else:
+            self.participants[int(args[0])-1], self.participants[int(args[1])-1] = self.participants[int(args[1])-1], self.participants[int(args[0])-1]
+            await ctx.send("**Participant/s swaped!**")
 
     #Shuffle (teams / roles / both)
     @commands.command()
@@ -139,7 +151,7 @@ class Game_Management(commands.Cog):
     async def next_game(self, ctx: commands.Context, move=None):
         """Same team new map"""
         await self.pick_map(ctx, True)
-        if move=="m":
+        if move in ("move", "m"):
             await self.move(ctx)
     
     @commands.command()
@@ -147,7 +159,7 @@ class Game_Management(commands.Cog):
         """Everything you need to start custom game"""
         await self.team_up(ctx)
         await self.pick_map(ctx, True, "teams")
-        if move=="m":
+        if move in ("move", "m"):
             await self.move(ctx)
 
 def setup(bot: commands.Bot):
