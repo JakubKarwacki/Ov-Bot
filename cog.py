@@ -48,11 +48,14 @@ class Game_Management(commands.Cog):
         return to_return
     
     async def move(self, ctx):
-        vc = [x for x in ctx.guild.voice_channels if x.name in self.settings["channels"]]
-        for k_id, key in enumerate(self.teams.keys()):
-            for t in self.teams[key]:
-                await ctx.guild.get_member(t).move_to(vc[k_id],reason="Teaming up") if ctx.guild.get_member(t).voice else await ctx.send(f"<@!{t}> not connected to the voice chat!")
-
+        if self.settings["channels"]:
+            vc = [x for x in ctx.guild.voice_channels if x.name in self.settings["channels"]]
+            for k_id, key in enumerate(self.teams.keys()):
+                for t in self.teams[key]:
+                    await ctx.guild.get_member(t).move_to(vc[k_id],reason="Teaming up") if ctx.guild.get_member(t).voice else await ctx.send(f"<@!{t}> not connected to the voice chat!")
+        else:
+            await ctx.send("Set up voice channels using the **ov!settings channels** command!")
+    
     #Creates participants list from current online / present on the channel members ("here" / "h" argument).
     @commands.command()
     async def team_up(self, ctx: commands.Context, display=True, *args):
@@ -152,6 +155,16 @@ class Game_Management(commands.Cog):
         await self.pick_map(ctx, True)
         if move in ("move", "m"):
             await self.move(ctx)
+    
+    #Sets settings values.
+    @commands.command()
+    async def settings(self, ctx: commands.Context, *args):
+        if args[0] == "channels":
+            args.pop(0)
+            self.settings["channels"] = args
+            await ctx.send("**Channels set up successfully!**")
+        else:
+            await ctx.send("**Wrong arguments!**")
     
     @commands.command()
     async def help(self, ctx: commands.Context):
