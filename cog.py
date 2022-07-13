@@ -44,7 +44,7 @@ class Bot_Commands(commands.Cog):
         for key in self.teams.keys():
             to_return += "`"+key+"`\n"
             for id, t in enumerate(self.teams[key]):
-                to_return += "*"+str(id+1)+": "+(ctx.guild.get_member(t).nick or ctx.guild.get_member(t).name)+"*\n"
+                to_return += f"*{id+1}: <@!{t}>*\n"
             to_return += "\n"
         return to_return
 
