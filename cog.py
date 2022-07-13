@@ -1,8 +1,7 @@
-from pydoc import describe
 import discord, random, json
 from discord.ext import commands
 
-class Bot_Commands(commands.Cog):
+class Game_Management(commands.Cog):
     def __init__(self, bot):
         self.bot = bot
         ### Settings ###
@@ -47,10 +46,17 @@ class Bot_Commands(commands.Cog):
                 to_return += f"*{id+1}: <@!{t}>*\n"
             to_return += "\n"
         return to_return
+    
+    async def move(self, ctx):
+        vc = [x for x in ctx.guild.voice_channels if x.name in self.settings["channels"]]
+        for k_id, key in enumerate(self.teams.keys()):
+            for t in self.teams[key]:
+                await ctx.guild.get_member(t).move_to(vc[k_id],reason="Teaming up")
 
+    #Create teams based on members who are currently online or present on the channel
     @commands.command()
-    async def team_up(self, ctx: commands.Context, *args):
-        """Form two teams (up to 5 members) and a reserve (available if on in bot settings) based on online server members or actual voice channel members."""
+    async def team_up(self, ctx: commands.Context, display=True, *args):
+        """Currently online / present on the channel into participants"""
         if args:
             if args[0] in ["here", "h"]:
                 voice = self.author.voice
@@ -64,49 +70,50 @@ class Bot_Commands(commands.Cog):
         else:
             self.participants = [y.id for y in ctx.guild.members if not y.bot]
             await ctx.send("**Teams formed from server online members!**")
-    
+
+    #Participants list
     @commands.command()
     async def list(self, ctx: commands.Context):
-        """Show list of team up participants."""
+        """Participants list"""
         await ctx.send("**Viewing the list of participants!**\n`Participants:`\n"+' '.join(["*"+str(id+1)+": "+(self.guild.get_member(x).nick or self.guild.get_member(x).name)+"*\n" for id, x in enumerate(self.participants)]))
 
-    #Add participant to the list.
+    #Add participant
     @commands.command()
     async def add(self, ctx: commands.Context, *args):
-        """Add participant to the list."""
+        """Add participant"""
         for x in args:
             [self.participants.append(y.id) for y in ctx.guild.members if x in (y.nick, y.name) and not x.bot]
         await ctx.send("**Participants added to the list!**")
         self.split_participants(ctx)
 
-    #Remove participant from the list.
+    #Remove participant
     @commands.command()
     async def remove(self, ctx: commands.Context, *args):
-        """Remove participant from the list."""
+        """Remove participant"""
         for x in args:
             [self.participants.pop(y.id) for y in ctx.guild.members if x in (y.nick, y.name)]
         await ctx.send("**Participants removed from the list!**")
         self.split_participants(ctx)
 
-    #Swaps team members with each other.
+    #Swap participants
     @commands.command()
     async def swap(self, ctx: commands.Context, *args):
-        """Swaps participants with each other."""
+        """Swap participants"""
         self.participants[args[0]-1], self.participants[args[1]-1] = self.participants[args[1]-1], self.participants[args[0]-1]
         await ctx.send("**Participants swaped!**")
         self.split_participants(ctx)
 
-    #Shuffle (teams / roles / both).
+    #Shuffle (teams / roles / both)
     @commands.command()
     async def shuffle(self, ctx: commands.Context, reshuffle="teams"):
-        """Shuffle (teams / roles / both)."""
+        """Shuffle (teams / roles / both)"""
         await ctx.send("**Teams reshuffled!**")
         self.split_participants(ctx, reshuffle)
 
-    #Select one from all or those belonging to a specific game mode maps.
+    #Pick random map
     @commands.command()
-    async def pick_map(self, ctx: commands.Context, teams=False):
-        """Select one from all or those belonging to a specific game mode maps."""
+    async def pick_map(self, ctx: commands.Context, teams=False, reshuffle=None):
+        """Pick random map"""
         mode_step = self.maps[random.randint(0,len(self.maps)-1)]
         mode = [x for x in mode_step.keys()][0]
         map = mode_step.get(mode)[random.randint(0,len(mode_step.get(mode))-1)]
@@ -115,31 +122,33 @@ class Bot_Commands(commands.Cog):
 
         embed = discord.Embed(title=mode+': '+name, color=0xF79D20)
         if teams:
-            embed.add_field(name="\u200B", value=self.split_participants(ctx, "teams"), inline=False)
+            embed.add_field(name="\u200B", value=self.split_participants(ctx, reshuffle), inline=False)
         embed.set_image(url=src)
         await ctx.send(embed=embed)
 
-    #Creates a ban vote for all teams for hero bans (one per role) or for a specific team.
+    #Vote for hero bans
+    '''
     @commands.command()
     async def ban_vote(self, ctx: commands.Context):
-        """Creates a ban vote for all teams for hero bans (one per role) or for a specific team."""
+        """Vote for hero bans"""
         return
+    '''
 
-    #Form two teams, pick a map and ban heroes (one per role for every team* available if on in bot settings).
+    #Same team, new map
     @commands.command()
-    async def next_game(self, ctx: commands.Context):
-        """Form two teams, pick a map and ban heroes (one per role for every team* available if on in bot settings)."""
+    async def next_game(self, ctx: commands.Context, move=None):
+        """Same team new map"""
         await self.pick_map(ctx, True)
+        if move=="m":
+            await self.move(ctx)
     
     @commands.command()
-    async def new_game(self, ctx: commands.Context):
+    async def new_game(self, ctx: commands.Context, move=None):
+        """Everything you need to start custom game"""
         await self.team_up(ctx)
-        await self.next_game(ctx)
-    
-    @commands.command()
-    async def on_command_error(self, ctx: commands.Context, error): 
-        if isinstance(error, commands.CommandNotFound): 
-            await ctx.send("Command unknown! Check **ov!help** for more informations!")
+        await self.pick_map(ctx, True, "teams")
+        if move=="m":
+            await self.move(ctx)
 
 def setup(bot: commands.Bot):
-    bot.add_cog(Bot_Commands(bot))
+    bot.add_cog(Game_Management(bot))
