@@ -1,3 +1,4 @@
+from pydoc import describe
 import discord, random, json
 from discord.ext import commands
 
@@ -106,16 +107,16 @@ class Bot_Commands(commands.Cog):
     @commands.command()
     async def pick_map(self, ctx: commands.Context, teams=False):
         """Select one from all or those belonging to a specific game mode maps."""
-        mode_step = self.maps[random.randint(0,len(self.maps))]
+        mode_step = self.maps[random.randint(0,len(self.maps)-1)]
         mode = [x for x in mode_step.keys()][0]
-        map = mode_step.get(mode)[random.randint(0,len(mode_step.get(mode)))]
+        map = mode_step.get(mode)[random.randint(0,len(mode_step.get(mode))-1)]
         name = map.get("name")
         src = map.get("src")
 
-        embed = discord.Embed(title=name, description="Mode: *"+mode+"*", color=0xF79D20)
-        embed.set_image(url=src)
+        embed = discord.Embed(title=mode+': '+name, color=0xF79D20)
         if teams:
-            embed.add_field(name="Teams", value=self.split_participants(ctx, "teams"), inline=False)
+            embed.add_field(name="\u200B", value=self.split_participants(ctx, "teams"), inline=False)
+        embed.set_image(url=src)
         await ctx.send(embed=embed)
 
     #Creates a ban vote for all teams for hero bans (one per role) or for a specific team.
