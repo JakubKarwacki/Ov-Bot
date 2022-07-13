@@ -145,7 +145,7 @@ class Game_Management(commands.Cog):
         """Everything you need to start custom game"""
         await self.team_up(ctx)
         await self.pick_map(ctx, True, "teams")
-        if move in ("move", "m"):
+        if move in ("move", "m") and len(self.teams.keys()) == 2:
             await self.move(ctx)
 
     #Same team, new map
@@ -153,18 +153,8 @@ class Game_Management(commands.Cog):
     async def next_game(self, ctx: commands.Context, move=None):
         """Same team new map"""
         await self.pick_map(ctx, True)
-        if move in ("move", "m"):
+        if move in ("move", "m") and len(self.teams.keys()) == 2:
             await self.move(ctx)
-    
-    #Sets settings values.
-    @commands.command()
-    async def settings(self, ctx: commands.Context, *args):
-        if args[0] == "channels":
-            args.pop(0)
-            self.settings["channels"] = args
-            await ctx.send("**Channels set up successfully!**")
-        else:
-            await ctx.send("**Wrong arguments!**")
     
     @commands.command()
     async def help(self, ctx: commands.Context):
